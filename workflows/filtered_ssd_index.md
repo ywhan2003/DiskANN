@@ -67,15 +67,17 @@ We demonstrate how to work through this pipeline using the SIFT10K dataset (http
 
 Now, download the base and query set and convert the data to binary format:
 ```bash
+mkdir -p DiskANN/build/data && cd DiskANN/build/data
 wget ftp://ftp.irisa.fr/local/texmex/corpus/siftsmall.tar.gz
 tar -zxvf siftsmall.tar.gz
-build/apps/utils/fvecs_to_bin float siftsmall/siftsmall_base.fvecs siftsmall/siftsmall_base.bin
-build/apps/utils/fvecs_to_bin float siftsmall/siftsmall_query.fvecs siftsmall/siftsmall_query.bin
+cd ..
+./apps/utils/fvecs_to_bin float data/siftsmall/siftsmall_base.fvecs data/siftsmall/siftsmall_base.bin
+./apps/utils/fvecs_to_bin float data/siftsmall/siftsmall_query.fvecs data/siftsmall/siftsmall_query.bin
 ```
 
 We now need to make label file for our vectors. For convenience, we've included a synthetic label generator through which we can generate label file as follow
 ```bash
-  build/apps/utils/generate_synthetic_labels  --num_labels 50 --num_points 10000  --output_file ./rand_labels_50_10K.txt --distribution_type zipf
+  ./apps/utils/generate_synthetic_labels  --num_labels 50 --num_points 10000  --output_file ./data/rand_labels_50_10K.txt --distribution_type zipf
 ```
 Note : `distribution_type` can be `rand` or `zipf`
 
@@ -83,9 +85,9 @@ This will genearate label file with 10000 data points with 50 distinct labels, r
 
 Now build and search the index and measure the recall using ground truth computed using bruteforce. We search for results with the filter 35.
 ```bash
-build/apps/utils/compute_groundtruth --data_type float --dist_fn l2 --base_file siftsmall/siftsmall_base.bin --query_file siftsmall/siftsmall_query.bin --gt_file siftsmall_gt_35.bin --K 100 --label_file rand_labels_50_10K.txt --filter_label 35 --universal_label 0
-build/apps/build_disk_index --data_type float --dist_fn l2 --data_path siftsmall/siftsmall_base.bin --index_path_prefix data/sift/siftsmall_R32_L50_filtered -R 32 --FilteredLbuild 50 -B 1 -M 1 --label_file rand_labels_50_10K.txt --universal_label 0 -F 0
-build/apps/search_disk_index --data_type float --dist_fn l2 --index_path_prefix data/sift/siftsmall_R32_L50_filtered --result_path siftsmall/search_35 --query_file siftsmall/siftsmall_query.bin --gt_file siftsmall_gt_35.bin -K 10 -L 10 20 30 40 50 100 --filter_label 35 -W 4 -T 8
+./apps/utils/compute_groundtruth_for_filters --data_type float --dist_fn l2 --base_file ./data/siftsmall/siftsmall_base.bin --query_file ./data/siftsmall/siftsmall_query.bin --gt_file ./data/siftsmall_gt_35.bin --K 100 --label_file ./data/rand_labels_50_10K.txt --filter_label 35 --universal_label 0
+./apps/build_disk_index --data_type float --dist_fn l2 --data_path ./data/siftsmall/siftsmall_base.bin --index_path_prefix ./data/siftsmall/siftsmall_R32_L50_filtered -R 96 --FilteredLbuild 50 -B 1 -M 1 --label_file ./data/rand_labels_50_10K.txt --universal_label 0 -F 0
+./apps/search_disk_index --data_type float --dist_fn l2 --index_path_prefix ./data/siftsmall/siftsmall_R32_L50_filtered --result_path ./data/siftsmall/search_35 --query_file ./data/siftsmall/siftsmall_query.bin --gt_file ./data/siftsmall_gt_35.bin -K 10 -L 10 30 50 70 90 110 130 150 170 190 210 230 250 270 290 310 330 350 370 390 410 430 450 470 490 510 530 550 570 590 610 630 650 --filter_label 35 -W 4 -T 8
 ```
 
  The output of both searches is listed below. The throughput (Queries/sec) as well as mean and 99.9 latency in microseconds for each `L` parameter provided. (Measured on a physical machine with a 11th Gen Intel(R) Core(TM) i7-1185G7 CPU and 32 GB RAM)
